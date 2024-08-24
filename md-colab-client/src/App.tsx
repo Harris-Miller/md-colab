@@ -1,12 +1,14 @@
-import './App.css';
+import { AppWrapper } from './components/AppWrapper';
+import { Editor } from './components/Editor';
 
-const App = () => {
+export const App = () => {
   return (
-    <div className="content">
-      <h1>Rsbuild with React</h1>
-      <p>Start building amazing things with Rsbuild.</p>
-    </div>
+    <AppWrapper>
+      <div className="content">
+        <h1>Rsbuild with React</h1>
+        <p>Start building amazing things with Rsbuild.</p>
+      </div>
+      <Editor />
+    </AppWrapper>
   );
 };
-
-export default App;

@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15.8
+    environment:
+      POSTGRES_DB: md_colab
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    ports:
+      - 5435:5432
+    restart: on-failure:3
+    volumes:
+      - db:/var/lib/postgres
+
+  pgweb:
+    image: sosedoff/pgweb
+    depends_on:
+      - postgres
+    environment:
+      PGWEB_DATABASE_URL: postgres://postgres:postgres@postgres:5432/md_colab?sslmode=disable
+    ports:
+      - 8085:8081
+    restart: on-failure:3
+
+  backend:
+    build: ./md-colab-server
+    depends_on:
+      - postgres
+    environment:
+      PG_URL: postgres://postgres:postgres@postgres:5432/md_colab?sslmode=disable
+    ports:
+      - 3001:3001
+    restart: on-failure:3
+
+  frontend:
+    build: ./md-colab-client
+    depends_on:
+      - backend
+    ports:
+      - 3000:3000
+    restart: on-failure:3
+
+volumes:
+  db:

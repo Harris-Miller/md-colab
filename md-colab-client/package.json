@@ -9,7 +9,7 @@
   "description": "",
   "scripts": {
     "build": "rsbuild build",
-    "dev": "rsbuild dev --open",
+    "dev": "rsbuild dev",
     "lint": "eslint .",
     "preview": "rsbuild preview",
     "test": "echo \"Error: no test specified\" && exit 1",

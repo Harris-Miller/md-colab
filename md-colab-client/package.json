@@ -1,12 +1,12 @@
 {
   "name": "md-colab-client",
+  "private": true,
   "version": "0.1.0",
   "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
-  "main": "src/index.js",
   "scripts": {
     "build": "rsbuild build",
     "dev": "rsbuild dev --open",

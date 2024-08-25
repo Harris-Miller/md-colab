@@ -22,7 +22,7 @@ services:
     restart: on-failure:3
 
   backend:
-    build: ./md-colab-server
+    build: ./server
     depends_on:
       - postgres
     environment:
@@ -32,11 +32,20 @@ services:
     restart: on-failure:3
 
   frontend:
-    build: ./md-colab-client
+    build: ./client
     depends_on:
       - backend
     ports:
       - 3000:3000
+    restart: on-failure:3
+
+  httpd:
+    build: ./httpd
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - 80:80
     restart: on-failure:3
 
 volumes:

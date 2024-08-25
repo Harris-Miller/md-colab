@@ -16,7 +16,7 @@ type Document = {
 const persistToDb = debounce((md: string) => {
   console.log('persisting to db');
   console.log(md);
-  fetch('http://localhost:3001/', {
+  fetch('/api', {
     body: JSON.stringify({ data: md }),
     headers: {
       'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ export const Editor = () => {
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:3001/')
+    fetch('/api')
       .then(res => res.json())
       .then((obj: Document) => {
         console.log(obj);

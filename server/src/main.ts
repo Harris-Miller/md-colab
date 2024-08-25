@@ -11,11 +11,10 @@ const app = express();
 console.log('Starting express...');
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // GET method route
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
+  console.log('GET /api');
   db.select()
     .from(documents)
     .limit(1)
@@ -25,8 +24,8 @@ app.get('/', (req, res) => {
 });
 
 // POST method route
-app.post('/', (req, res) => {
-  console.log('POST /');
+app.post('/api', express.json(), (req, res) => {
+  console.log('POST /api');
   console.log(req.body);
   const { data } = req.body as { data: string };
   db.update(documents)
@@ -35,6 +34,12 @@ app.post('/', (req, res) => {
     .then(() => {
       res.status(202).json({ data: 'ok' });
     });
+});
+
+app.use((req, res, next) => {
+  console.log('404 not found');
+  console.log(req.path);
+  res.status(404).json({ error: '404 not found' });
 });
 
 const server = app.listen(PORT, () => {

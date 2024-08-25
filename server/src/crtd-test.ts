@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as Y from 'yjs';
 
 const doc = new Y.Doc();

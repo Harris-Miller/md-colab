@@ -15,7 +15,7 @@ const eslintConfig = [
   },
   {
     rules: {
-      'no-console': 'off',
+      // 'no-console': 'off',
       'line-comment-position': 'off',
       'func-names': ['error', 'as-needed'],
       '@typescript-eslint/explicit-module-boundary-types': 'off',

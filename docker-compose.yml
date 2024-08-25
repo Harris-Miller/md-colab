@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:15.8
+    container_name: postgres
     environment:
       POSTGRES_DB: md_colab
       POSTGRES_PASSWORD: postgres
@@ -13,6 +14,7 @@ services:
 
   pgweb:
     image: sosedoff/pgweb
+    container_name: pgweb
     depends_on:
       - postgres
     environment:
@@ -23,64 +25,67 @@ services:
 
   redis:
     image: redis/redis-stack:latest
+    container_name: redis
     ports:
       - 6379:6379
       - 8001:8001
     restart: on-failure:3
 
-  elasticsearch:
-    image: elasticsearch:7.16.1
-    container_name: es
-    environment:
-      discovery.type: single-node
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl --silent --fail localhost:9200/_cluster/health || exit 1",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-    networks:
-      - elastic
-  logstash:
-    image: logstash:7.16.1
-    container_name: log
-    environment:
-      discovery.seed_hosts: logstash
-      LS_JAVA_OPTS: "-Xms512m -Xmx512m"
-    volumes:
-      - ./logstash/pipeline/logstash-nginx.config:/usr/share/logstash/pipeline/logstash-nginx.config
-      - ./logstash/nginx.log:/home/nginx.log
-    ports:
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
-      - "5044:5044"
-      - "9600:9600"
-    depends_on:
-      - elasticsearch
-    networks:
-      - elastic
-    command: logstash -f /usr/share/logstash/pipeline/logstash-nginx.config
-  kibana:
-    image: kibana:7.16.1
-    container_name: kib
-    ports:
-      - "5601:5601"
-    depends_on:
-      - elasticsearch
-    networks:
-      - elastic
+  # elasticsearch:
+  #   image: elasticsearch:7.16.1
+  #   container_name: es
+  #   environment:
+  #     discovery.type: single-node
+  #     ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "curl --silent --fail localhost:9200/_cluster/health || exit 1",
+  #       ]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 3
+  #   # networks:
+  #   #   - elastic
+  # logstash:
+  #   image: logstash:7.16.1
+  #   container_name: log
+  #   environment:
+  #     discovery.seed_hosts: logstash
+  #     LS_JAVA_OPTS: "-Xms512m -Xmx512m"
+  #   volumes:
+  #     - ./logstash/pipeline/logstash-nginx.config:/usr/share/logstash/pipeline/logstash-nginx.config
+  #     - ./logstash/nginx.log:/home/nginx.log
+  #   ports:
+  #     - "5000:5000/tcp"
+  #     - "5000:5000/udp"
+  #     - "5044:5044"
+  #     - "9600:9600"
+  #   depends_on:
+  #     - elasticsearch
+  #   # networks:
+  #   #   - elastic
+  #   command: logstash -f /usr/share/logstash/pipeline/logstash-nginx.config
+  # kibana:
+  #   image: kibana:7.16.1
+  #   container_name: kib
+  #   ports:
+  #     - "5601:5601"
+  #   depends_on:
+  #     - elasticsearch
+  #   # networks:
+  #   #   - elastic
 
   backend:
     build: ./server
+    container_name: server
     depends_on:
       - postgres
+      # - logstash
     environment:
       PG_URL: postgres://postgres:postgres@postgres:5432/md_colab?sslmode=disable
     ports:
@@ -89,6 +94,7 @@ services:
 
   frontend:
     build: ./client
+    container_name: client
     depends_on:
       - backend
     ports:
@@ -97,6 +103,7 @@ services:
 
   httpd:
     build: ./httpd
+    container_name: nginx
     depends_on:
       - backend
       - frontend
@@ -106,7 +113,6 @@ services:
 
 volumes:
   db:
-
-networks:
-  elastic:
-    driver: bridge
+# networks:
+#   elastic:
+#     driver: bridge

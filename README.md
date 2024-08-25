@@ -1,4 +1,13 @@
 
+# Launch
+
+Easy run
+```bash
+sh ./docker-up.sh
+```
+
+
+### ELK - (disabled)
 
 UI: http://localhost:5601/
 * Elasticsearch: http://localhost:9200

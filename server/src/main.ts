@@ -1,20 +1,25 @@
 import cors from 'cors';
 import { eq } from 'drizzle-orm';
 import express from 'express';
+import { Server } from 'socket.io';
+
+import { createServer } from 'http';
 
 import { db } from './dbClient';
+import { logger } from './logger';
 import { documents } from './schema';
 
 const PORT = 3001;
 const app = express();
 
-console.log('Starting express...');
+logger.info('Starting express...');
 
 app.use(cors());
 
 // GET method route
 app.get('/api', (req, res) => {
-  console.log('GET /api');
+  logger.info('GET /api');
+
   db.select()
     .from(documents)
     .limit(1)
@@ -25,8 +30,9 @@ app.get('/api', (req, res) => {
 
 // POST method route
 app.post('/api', express.json(), (req, res) => {
-  console.log('POST /api');
-  console.log(req.body);
+  logger.info('POST /api');
+  logger.info(req.body);
+
   const { data } = req.body as { data: string };
   db.update(documents)
     .set({ body: data })
@@ -37,18 +43,39 @@ app.post('/api', express.json(), (req, res) => {
 });
 
 app.use((req, res, next) => {
-  console.log('404 not found');
-  console.log(req.path);
+  logger.info(`${req.method} /${req.path} - 404 not found`);
+
   res.status(404).json({ error: '404 not found' });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}`);
+const server = createServer(app);
+
+const io = new Server(server, {
+  path: '/api',
+});
+
+io.on('connection', socket => {
+  console.log('Socket.IO connected', socket.id);
+
+  socket.on('message', msg => {
+    logger.info('Socket.IO Received Message');
+    logger.info(msg);
+
+    socket.emit('message', 'pong');
+  });
+
+  socket.onAny((eventName: string, ...args: object[]) => {
+    console.log('socket.onAny', eventName, ...args);
+  });
+});
+
+server.listen(PORT, () => {
+  logger.info(`Example app listening on port ${PORT}`);
 });
 
 process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing HTTP server');
   server.close(() => {
-    console.log('HTTP server closed');
+    logger.info('HTTP server closed');
   });
 });

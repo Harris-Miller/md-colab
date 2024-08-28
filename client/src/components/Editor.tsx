@@ -1,14 +1,10 @@
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
+import MonacoEditor from '@monaco-editor/react';
 import { debounce } from '@mui/material';
-import { $getRoot, $getSelection } from 'lexical';
-import type { ComponentProps, FC } from 'react';
-import { useEffect } from 'react';
+import type { editor } from 'monaco-editor';
+import type { FC } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { IndexeddbPersistence } from 'y-indexeddb';
+import { MonacoBinding } from 'y-monaco';
 import * as Y from 'yjs';
 
 type Document = {
@@ -33,63 +29,51 @@ const persistToDb = debounce((md: string) => {
   // });
 }, 500);
 
-const theme = {
-  // Theme styling goes here
-  // ...
-};
-
-// When the editor changes, you can get notified via the
-// LexicalOnChangePlugin!
-const onChange: ComponentProps<typeof OnChangePlugin>['onChange'] = (editorState, editor, tags) => {
-  console.log(editorState, editor, tags);
-  editorState.read(() => {
-    // Read the contents of the EditorState here.
-    const root = $getRoot().getLatest();
-    const selection = $getSelection();
-
-    console.log(root, selection);
-  });
-};
-
-// Lexical React plugins are React components, which makes them
-// highly composable. Furthermore, you can lazy load plugins if
-// desired, so you don't pay the cost for plugins until you
-// actually use them.
-const MyCustomAutoFocusPlugin = () => {
-  const [editor] = useLexicalComposerContext();
-
-  useEffect(() => {
-    // Focus the editor when the effect fires!
-    editor.focus();
-  }, [editor]);
-
-  return null;
-};
-
-// Catch any errors that occur during Lexical updates and log them
-// or throw them as needed. If you don't throw them, Lexical will
-// try to recover gracefully without losing user data.
-const onError: ComponentProps<typeof LexicalComposer>['initialConfig']['onError'] = error => {
-  console.error(error);
-};
-
 export const Editor: FC = () => {
-  const initialConfig: ComponentProps<typeof LexicalComposer>['initialConfig'] = {
-    namespace: 'MyEditor',
-    onError,
-    theme,
-  };
+  const yDoc = useMemo(() => new Y.Doc(), []);
+  const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
+  const [provider, setProvider] = useState<IndexeddbPersistence | null>(null);
+  const [binding, setBinding] = useState<MonacoBinding | null>(null);
+
+  // this effect manages the lifetime of the Yjs document and the provider
+  useEffect(() => {
+    const instance = new IndexeddbPersistence('demo', yDoc);
+
+    setProvider(instance);
+
+    return () => {
+      instance.destroy();
+      yDoc.destroy();
+    };
+  }, [yDoc]);
+
+  // this effect manages the lifetime of the editor binding
+  useEffect(() => {
+    if (provider == null || editor == null) {
+      return () => {
+        // no-op
+      };
+    }
+
+    console.log('reached', provider);
+
+    const instance = new MonacoBinding(yDoc.getText(), editor.getModel()!, new Set([editor]));
+    setBinding(instance);
+
+    return () => {
+      instance.destroy();
+    };
+  }, [yDoc, provider, editor]);
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <PlainTextPlugin
-        contentEditable={<ContentEditable />}
-        placeholder={<div>Enter some text...</div>}
-        ErrorBoundary={LexicalErrorBoundary}
-      />
-      <OnChangePlugin onChange={onChange} />
-      <HistoryPlugin />
-      <MyCustomAutoFocusPlugin />
-    </LexicalComposer>
+    <MonacoEditor
+      height="90vh"
+      defaultValue="// some comment"
+      defaultLanguage="javascript"
+      onMount={e => {
+        setEditor(e);
+      }}
+      theme="vs-dark"
+    />
   );
 };

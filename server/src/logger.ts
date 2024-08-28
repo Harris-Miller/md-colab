@@ -1,8 +1,6 @@
 import winston from 'winston';
 
 const logger = winston.createLogger({
-  defaultMeta: { service: 'server' },
-  format: winston.format.logstash(),
   transports: [
     //
     // - Write all logs with importance level of `error` or less to `error.log`
@@ -10,13 +8,8 @@ const logger = winston.createLogger({
     //
     // new winston.transports.File({ filename: 'error.log', level: 'error' }),
     // new winston.transports.File({ filename: 'combined.log' }),
-    // new winston.transports.Http({
-    //   format: winston.format.logstash(),
-    //   host: 'log',
-    //   port: 9600,
-    // }),
     new winston.transports.Console({
-      format: winston.format.simple(),
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
     }),
   ],
 });

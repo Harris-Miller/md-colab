@@ -31,55 +31,6 @@ services:
       - 8001:8001
     restart: on-failure:3
 
-  # elasticsearch:
-  #   image: elasticsearch:7.16.1
-  #   container_name: es
-  #   environment:
-  #     discovery.type: single-node
-  #     ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-  #   ports:
-  #     - "9200:9200"
-  #     - "9300:9300"
-  #   healthcheck:
-  #     test:
-  #       [
-  #         "CMD-SHELL",
-  #         "curl --silent --fail localhost:9200/_cluster/health || exit 1",
-  #       ]
-  #     interval: 10s
-  #     timeout: 10s
-  #     retries: 3
-  #   # networks:
-  #   #   - elastic
-  # logstash:
-  #   image: logstash:7.16.1
-  #   container_name: log
-  #   environment:
-  #     discovery.seed_hosts: logstash
-  #     LS_JAVA_OPTS: "-Xms512m -Xmx512m"
-  #   volumes:
-  #     - ./logstash/pipeline/logstash-nginx.config:/usr/share/logstash/pipeline/logstash-nginx.config
-  #     - ./logstash/nginx.log:/home/nginx.log
-  #   ports:
-  #     - "5000:5000/tcp"
-  #     - "5000:5000/udp"
-  #     - "5044:5044"
-  #     - "9600:9600"
-  #   depends_on:
-  #     - elasticsearch
-  #   # networks:
-  #   #   - elastic
-  #   command: logstash -f /usr/share/logstash/pipeline/logstash-nginx.config
-  # kibana:
-  #   image: kibana:7.16.1
-  #   container_name: kib
-  #   ports:
-  #     - "5601:5601"
-  #   depends_on:
-  #     - elasticsearch
-  #   # networks:
-  #   #   - elastic
-
   backend:
     build: ./server
     container_name: server
@@ -89,7 +40,7 @@ services:
     environment:
       PG_URL: postgres://postgres:postgres@postgres:5432/md_colab?sslmode=disable
     ports:
-      - 3001:3001
+      - 3101:3001 # use a different port so local deploy doesn't conflict client dev server
     restart: on-failure:3
 
   frontend:
@@ -98,7 +49,7 @@ services:
     depends_on:
       - backend
     ports:
-      - 3000:3000
+      - 3100:3000 # use a different port so local deploy doesn't conflict client dev server
     restart: on-failure:3
 
   httpd:

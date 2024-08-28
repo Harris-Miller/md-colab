@@ -1,11 +1,11 @@
 import { AppWrapper } from './components/AppWrapper';
 import { Editor } from './components/Editor';
-import { socket } from './socket';
+// import { socket } from './socket';
 
 export const App = () => {
   const ping = () => {
     console.log('Pinging ws');
-    socket.emit('message', 'ping');
+    // socket.emit('message', 'ping');
   };
 
   return (

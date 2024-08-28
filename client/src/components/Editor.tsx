@@ -1,10 +1,11 @@
 import MonacoEditor from '@monaco-editor/react';
-import { debounce } from '@mui/material';
+import { debounce, Typography } from '@mui/material';
 import type { editor } from 'monaco-editor';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { IndexeddbPersistence } from 'y-indexeddb';
 import { MonacoBinding } from 'y-monaco';
+import { Awareness } from 'y-protocols/awareness';
+import { SocketIOProvider } from 'y-socket.io';
 import * as Y from 'yjs';
 
 type Document = {
@@ -32,17 +33,36 @@ const persistToDb = debounce((md: string) => {
 export const Editor: FC = () => {
   const yDoc = useMemo(() => new Y.Doc(), []);
   const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
-  const [provider, setProvider] = useState<IndexeddbPersistence | null>(null);
+  const [provider, setProvider] = useState<SocketIOProvider | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
+  const [status, setStatus] = useState<string>('disconnected');
+  const [clients, setClients] = useState<string[]>([]);
 
   // this effect manages the lifetime of the Yjs document and the provider
   useEffect(() => {
-    const instance = new IndexeddbPersistence('demo', yDoc);
+    console.log('connecting SocketIOProvider');
+    const socketIOProvider = new SocketIOProvider('http://localhost:80/api', 'demo', yDoc, {
+      autoConnect: true,
+      awareness: new Awareness(yDoc),
+      // disableBc: true,
+      // auth: { token: 'valid-token' },
+    });
+    socketIOProvider.awareness.on('change', () => {
+      setClients(Array.from(socketIOProvider.awareness.getStates().keys()).map(key => `${key}`));
+    });
+    socketIOProvider.awareness.setLocalState({ id: Math.random(), name: 'Perico' });
+    socketIOProvider.on('sync', (isSync: boolean) => {
+      console.log('websocket sync', isSync);
+    });
+    socketIOProvider.on('status', ({ status: _status }: { status: string }) => {
+      console.log('socketIOProvider status change', status);
+      if (_status) setStatus(_status);
+    });
 
-    setProvider(instance);
+    setProvider(socketIOProvider);
 
     return () => {
-      instance.destroy();
+      socketIOProvider.destroy();
       yDoc.destroy();
     };
   }, [yDoc]);
@@ -57,7 +77,7 @@ export const Editor: FC = () => {
 
     console.log('reached', provider);
 
-    const instance = new MonacoBinding(yDoc.getText(), editor.getModel()!, new Set([editor]));
+    const instance = new MonacoBinding(yDoc.getText(), editor.getModel()!, new Set([editor]), provider.awareness);
     setBinding(instance);
 
     return () => {
@@ -66,14 +86,17 @@ export const Editor: FC = () => {
   }, [yDoc, provider, editor]);
 
   return (
-    <MonacoEditor
-      height="90vh"
-      defaultValue="// some comment"
-      defaultLanguage="javascript"
-      onMount={e => {
-        setEditor(e);
-      }}
-      theme="vs-dark"
-    />
+    <>
+      <Typography>{status}</Typography>
+      <MonacoEditor
+        height="90vh"
+        defaultValue="// some comment"
+        defaultLanguage="javascript"
+        onMount={e => {
+          setEditor(e);
+        }}
+        theme="vs-dark"
+      />
+    </>
   );
 };

@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-export const socket = io({
+export const socket = io('localhost:3001', {
   path: '/api',
 });
 

@@ -5,8 +5,9 @@ import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { MonacoBinding } from 'y-monaco';
 import { Awareness } from 'y-protocols/awareness';
-import { SocketIOProvider } from 'y-socket.io';
 import * as Y from 'yjs';
+
+import { socket } from '../socket';
 
 type Document = {
   body: string;
@@ -33,57 +34,65 @@ const persistToDb = debounce((md: string) => {
 export const Editor: FC = () => {
   const yDoc = useMemo(() => new Y.Doc(), []);
   const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
-  const [provider, setProvider] = useState<SocketIOProvider | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
   const [status, setStatus] = useState<string>('disconnected');
   const [clients, setClients] = useState<string[]>([]);
 
   // this effect manages the lifetime of the Yjs document and the provider
   useEffect(() => {
-    console.log('connecting SocketIOProvider');
-    const socketIOProvider = new SocketIOProvider('http://localhost:80/api', 'demo', yDoc, {
-      autoConnect: true,
-      awareness: new Awareness(yDoc),
-      // disableBc: true,
-      // auth: { token: 'valid-token' },
-    });
-    socketIOProvider.awareness.on('change', () => {
-      setClients(Array.from(socketIOProvider.awareness.getStates().keys()).map(key => `${key}`));
-    });
-    socketIOProvider.awareness.setLocalState({ id: Math.random(), name: 'Perico' });
-    socketIOProvider.on('sync', (isSync: boolean) => {
-      console.log('websocket sync', isSync);
-    });
-    socketIOProvider.on('status', ({ status: _status }: { status: string }) => {
-      console.log('socketIOProvider status change', status);
-      if (_status) setStatus(_status);
-    });
+    // console.log('connecting SocketIOProvider');
+    // const socketIOProvider = new SocketIOProvider('http://localhost:80/api', 'demo', yDoc, {
+    //   autoConnect: true,
+    //   awareness: new Awareness(yDoc),
+    //   // disableBc: true,
+    //   // auth: { token: 'valid-token' },
+    // });
+    // socketIOProvider.awareness.on('change', () => {
+    //   setClients(Array.from(socketIOProvider.awareness.getStates().keys()).map(key => `${key}`));
+    // });
+    // socketIOProvider.awareness.setLocalState({ id: Math.random(), name: 'Perico' });
+    // socketIOProvider.on('sync', (isSync: boolean) => {
+    //   console.log('websocket sync', isSync);
+    // });
+    // socketIOProvider.on('status', ({ status: _status }: { status: string }) => {
+    //   console.log('socketIOProvider status change', status);
+    //   if (_status) setStatus(_status);
+    // });
 
-    setProvider(socketIOProvider);
+    // setProvider(socketIOProvider);
+
+    yDoc.on('update', update => {
+      console.log('yDoc onUpdate', update);
+      socket.emit('sync-update', update);
+    });
 
     return () => {
-      socketIOProvider.destroy();
+      // socketIOProvider.destroy();
       yDoc.destroy();
     };
   }, [yDoc]);
 
   // this effect manages the lifetime of the editor binding
   useEffect(() => {
-    if (provider == null || editor == null) {
+    if (editor == null) {
       return () => {
         // no-op
       };
     }
 
-    console.log('reached', provider);
+    // console.log('reached', provider);
 
-    const instance = new MonacoBinding(yDoc.getText(), editor.getModel()!, new Set([editor]), provider.awareness);
+    const instance = new MonacoBinding(
+      yDoc.getText('body'),
+      editor.getModel()!,
+      new Set([editor]) /*provider.awareness*/,
+    );
     setBinding(instance);
 
     return () => {
       instance.destroy();
     };
-  }, [yDoc, provider, editor]);
+  }, [yDoc, editor]);
 
   return (
     <>

@@ -10,6 +10,8 @@ import '@fontsource/roboto/700.css';
 import { App } from './App';
 import { ThemeWrapper } from './components/ThemeWrapper';
 
+import './socket';
+
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>

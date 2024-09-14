@@ -1,3 +1,9 @@
+volumes:
+  db:
+# networks:
+#   elastic:
+#     driver: bridge
+
 services:
   postgres:
     image: postgres:15.8
@@ -10,7 +16,7 @@ services:
       - 5435:5432
     restart: on-failure:3
     volumes:
-      - db:/var/lib/postgres
+      - db:/var/lib/postgres/data
 
   pgweb:
     image: sosedoff/pgweb
@@ -42,15 +48,37 @@ services:
     ports:
       - 3101:3001 # use a different port so local deploy doesn't conflict client dev server
     restart: on-failure:3
+    command: bun --watch run ./src/main.ts
+    develop:
+      watch:
+        - action: sync
+          path: ./server
+          target: /usr/src/app
+          ignore:
+            - node_modules
+        - action: rebuild
+          path: ./server/package.json
 
   frontend:
-    build: ./client
+    build:
+      context: ./client
+      target: build
     container_name: client
     depends_on:
       - backend
     ports:
       - 3100:3000 # use a different port so local deploy doesn't conflict client dev server
     restart: on-failure:3
+    command: pnpm run dev
+    develop:
+      watch:
+        - action: sync
+          path: ./client
+          target: /app
+          ignore:
+            - node_modules
+        - action: rebuild
+          path: ./client/package.json
 
   httpd:
     build: ./httpd
@@ -61,9 +89,3 @@ services:
     ports:
       - 80:80
     restart: on-failure:3
-
-volumes:
-  db:
-# networks:
-#   elastic:
-#     driver: bridge

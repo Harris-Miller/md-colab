@@ -1,15 +1,11 @@
 
 # Launch
 
-Easy run
-```bash
-sh ./docker-up.sh
-```
+docker-compose specifically runs with command overrides and `develop` for live-code changes. The Dockerfiles defaultly are set up for Prod use
 
+`docker compose up --build --detach`
 
-### ELK - (disabled)
+## db setup
 
-UI: http://localhost:5601/
-* Elasticsearch: http://localhost:9200
-* Logstash: http://localhost:9600
-* Kibana: http://localhost:5601/api/status
+from `./server` `PG_PORT=5435 bun run migrate && bun run seed.ts`
+
